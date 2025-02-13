@@ -1,76 +1,54 @@
 <template>
-  <div>
-    <input type="file" @change="handleFileChange" />
-
-    <div class="d-flex flex-column align-content-center">
-      <div>
-        <h4><strong>Taille du cadre:</strong></h4>
-        <div>
-          <div class="d-flex">
-            <h6>Longueur: {{ height / 10 }} centimètres</h6>
-
-            <button @click="changeSize(height + 100, width)">
-              <FontAwesomeIcon :icon="faPlus" />
-            </button>
-            <button @click="changeSize(height - 100, width)">
-              <FontAwesomeIcon :icon="faMinus" />
-            </button>
-          </div>
-
-          <div class="d-flex">
-            <h6>Largeur: {{ width / 10 }} centimètres</h6>
-            <button @click="changeSize(height, width + 100)">
-              <FontAwesomeIcon :icon="faPlus" />
-            </button>
-            <button @click="changeSize(height, width - 100)">
-              <FontAwesomeIcon :icon="faMinus" />
-            </button>
-          </div>
-        </div>
-      </div>
-      <div>
-        <h4><strong>Taille de la photo:</strong></h4>
-        <div class="d-flex justify-content-between">
-          <div class="d-flex flex-column">
-            <h6>Largeur: {{ width / 10 }} centimètres</h6>
-            <button @click="changeSizePic(width + 100)">
-              <FontAwesomeIcon :icon="faPlus" />
-            </button>
-            <button @click="changeSizePic(width - 100)">
-              <FontAwesomeIcon :icon="faMinus" />
-            </button>
-          </div>
-            <div class="d-flex flex-column">
-              <h6>Positionnement Haut-Bas:</h6>
-              <button @click="changeSizeMargin(marginTop + 10, marginLeft)">
-                <FontAwesomeIcon :icon="faPlus" />
-              </button>
-              <button @click="changeSizeMargin(marginTop - 10, marginLeft)">
-                <FontAwesomeIcon :icon="faMinus" />
-              </button>
-            </div>
-            <div class="d-flex flex-column">
-              <h6>Positionnement Gauche-Droite:</h6>
-              <button @click="changeSizeMargin(marginTop, marginLeft + 10)">
-                <FontAwesomeIcon :icon="faPlus" />
-              </button>
-              <button @click="changeSizeMargin(marginTop, marginLeft - 10)">
-                <FontAwesomeIcon :icon="faMinus" />
-              </button>
-            </div>
-        </div>
+  <div class="container-fluid">
+    <div class="row">
+      <div class="col-12">
+        <h2>Vue 3 Draggable Image</h2>
+        <input type="file" @change="handleFileChange" />
       </div>
     </div>
-    <div class="frame" :style="frameStyle">
-      <div v-if="previewUrl">
-        <img :src="previewUrl" alt="Preview" :style="imgStyle" />
+    <div class="row">
+      <div class="col-12">
+        <div class="text-start" v-if="previewUrl">
+          <div class="d-flex">
+            <h4><strong>Taille de l'image:</strong></h4>
+            <div class="d-flex flex-column">
+              <h6>Largeur: {{ dimensions.width }} px</h6>
+              <h6>Largeur: {{ dimensions.width / 5 }} cm</h6>
+            </div>
+            <div class="d-flex">
+              <button @click="changeSize(dimensions.width + 100)">+</button>
+              <button @click="changeSize(dimensions.width - 100)">-</button>
+            </div>
+          </div>
+          <div>
+            <h4><strong>Position de l'image:</strong></h4>
+        
+            <div class="d-flex">
+              <button @click="changePlan(true)">Arriere plan</button>
+              <button @click="changePlan(false)">Premier plan</button>
+            </div>
+          </div>
+          <div></div>
+        </div>
+      </div>
+      <div class="col-12">
+        <img
+          alt="Draggable"
+          class="draggable"
+          ref="imageRef"
+          :src="previewUrl"
+          :style="imageStyle"
+          @mousedown="startDrag"
+          @touchstart="startDrag"
+        />
+        <div class="frame"></div>
       </div>
     </div>
   </div>
 </template>
+
 <script setup>
 import { ref, computed } from "vue";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import {
   faArrowDown,
   faArrowLeft,
@@ -83,60 +61,146 @@ faArrowLeft;
 faArrowRight;
 faArrowUp;
 faArrowDown;
-faMinus, faPlus;
+faPlus;
+
+const imageRef = (ref < HTMLImageElement) | (null > null);
+const isDragging = ref(false);
+const offsetX = ref(0);
+const offsetY = ref(0);
+const zindex = ref(0);
+const position = ref({ x: 50, y: 50 });
+
 const file = ref(null);
-const previewUrl = ref(null);
-const width = ref(500);
-const picWidth = ref(500);
-const marginTop = ref(0);
-const marginLeft = ref(0);
-const height = ref(500);
+const previewUrl = ref(undefined);
+
+const dimensions = ref({ width: 0, height: 0 });
+const imageStyle = computed(() => ({
+  zIndex:zindex.value,
+  left: `${position.value.x}px`,
+  top: `${position.value.y}px`,
+  position: "absolute", // Explicitly typed as Partial<CSSStyleDeclaration>
+  cursor: isDragging.value ? "grabbing" : "grab",
+  width: dimensions.value.width + "px",
+  backgroundImage: "url(" + previewUrl.value + ")",
+}));
 const handleFileChange = (event) => {
   const selectedFile = event.target.files[0];
+
   if (selectedFile) {
+    const img = new Image();
     file.value = selectedFile;
     previewUrl.value = URL.createObjectURL(selectedFile);
+    img.src = URL.createObjectURL(selectedFile);
+    img.onload = () => {
+      img.width = 500;
+      dimensions.value = { width: img.width, height: img.height };
+      // Don't forget to release the object URL after use
+    };
   }
 };
-const frameStyle = computed(() => {
-  return {
-    "--previewUrl": "url(" + previewUrl.value + ")",
-    width: width.value + "px",
-    height: height.value + "px",
-  };
-});
 
-const imgStyle = computed(() => {
-  return {
-    width: picWidth.value + "px",
-    "margin-top": marginTop.value + "px",
-    "margin-left": marginLeft.value + "px",
+const startDrag = (event) => {
+  isDragging.value = true;
+
+  const clientX = "touches" in event ? event.touches[0].clientX : event.clientX;
+  const clientY = "touches" in event ? event.touches[0].clientY : event.clientY;
+
+  if (imageRef.value) {
+    offsetX.value = clientX - imageRef.value.offsetLeft;
+    offsetY.value = clientY - imageRef.value.offsetTop;
+  }
+
+  document.addEventListener("mousemove", moveImage);
+  document.addEventListener("mouseup", stopDrag);
+  document.addEventListener("touchmove", moveImage);
+  document.addEventListener("touchend", stopDrag);
+};
+
+const moveImage = (event) => {
+  if (!isDragging.value) return;
+
+  const clientX = "touches" in event ? event.touches[0].clientX : event.clientX;
+  const clientY = "touches" in event ? event.touches[0].clientY : event.clientY;
+
+  position.value = {
+    x: clientX - offsetX.value,
+    y: clientY - offsetY.value,
   };
-});
-const changeSize = (newHeight, newWidth) => {
-  width.value = newWidth;
-  height.value = newHeight;
 };
-const changeSizePic = (newWidth) => {
-  console.log(newWidth);
+
+const stopDrag = () => {
+  isDragging.value = false;
+  document.removeEventListener("mousemove", moveImage);
+  document.removeEventListener("mouseup", stopDrag);
+  document.removeEventListener("touchmove", moveImage);
+  document.removeEventListener("touchend", stopDrag);
+};
+
+const changeSize = (newWidth) => {
+  dimensions.value.width = newWidth;
+};
+const changePlan = (isArrierePlan) => {
+  console.log(isArrierePlan);
   
-  picWidth.value = newWidth;
-};
-const changeSizeMargin = (newMarginTop, newMarginLeft) => {
-  marginTop.value = newMarginTop;
-  marginLeft.value = newMarginLeft;
+  if (isArrierePlan) {
+    zindex.value = 0
+  } else{
+    zindex.value = 99
+  }
 };
 </script>
 
-<style lang="scss">
-.frame {
-  --previewUrl: unset;
+<style scoped>
+.container {
+  text-align: center;
+  font-family: Arial, sans-serif;
+}
 
- 
+.draggable {
+  width: 150px;
+  height: auto;
+  position: absolute;
+  cursor: grab;
+
+  /* mask-image: url("/public/frames/tryptych_40x60.svg");
+  z-index: 99;
+  background-size: cover;
+  overflow: hidden; /* Ensures no overflow */
+  /* -webkit-mask-image: url("/public/frames/tryptych_40x60.svg");; /* For Safari */
+  /* mask-position: center;
+  mask-repeat: no-repeat;
+  mask-size: 650px 300px; /* Fixed mask size */
+  /* outline: 2px black solid;
+  clip-path: inset(); */
+}
+.frame {
+  position: relative;
   margin: auto;
   margin-top: 100px;
-  border: solid 1px grey;
+  width: 100%;
+  height: 80vh;
+  overflow: visible;
+  /* background-image: url("https://plus.unsplash.com/premium_photo-1661766077694-6e3750b0fb97?fm=jpg&q=60&w=3000&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MXx8ZW1wdHklMjB3YWxsfGVufDB8fDB8fHww"); */
+  background-image: url("/public/frames/B_tryptich_40x60.svg");
 
-  mask-image: url("/public/frames/tryptych_40x60.svg");
+  background-size: cover;
+  background-repeat: no-repeat;
+}
+.mask {
+  position: absolute;
+  mask-image: url("/public/frames/Fichier\ 3.svg");
+  mask-repeat: no-repeat;
+  mask-position: center;
+  mask-mode: alpha; /* Use alpha channel for masking */
+  mask-origin: content-box; /* Mask only applied inside content-box */
+  mask-clip: padding-box; /* Mask affects padding-box area */
+  border: solid 1px yellow;
+  width: 550px;
+  height: 150px;
+  top: 100px;
+  right: 0;
+  left: 0;
+  margin: auto;
+  background-image: url("https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR9SRRmhH4X5N2e4QalcoxVbzYsD44C-sQv-w&s");
 }
 </style>
