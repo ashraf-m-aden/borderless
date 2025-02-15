@@ -41,7 +41,7 @@
           @mousedown="startDrag"
           @touchstart="startDrag"
         />
-        <div class="frame"></div>
+        <div class="frame" id="frame" @mousedown="startDrag" @touchstart="startDrag"></div>
       </div>
     </div>
   </div>
@@ -98,14 +98,37 @@ const handleFileChange = (event) => {
     };
   }
 };
+    // Function to check if the image is inside the drag area
+    const isInsideDragArea = () => {
+      const dragArea = document.getElementById("drag-area");
+      if (!dragArea || !imageRef.value) return false;
 
+      const imgRect = imageRef.value.getBoundingClientRect();
+      const areaRect = dragArea.getBoundingClientRect();
+
+      return (
+        imgRect.left >= areaRect.left &&
+        imgRect.right <= areaRect.right &&
+        imgRect.top >= areaRect.top &&
+        imgRect.bottom <= areaRect.bottom
+      );
+    };
 const startDrag = (event) => {
   isDragging.value = true;
+  const dragArea = document.getElementById("frame");
+      // Allow dragging if clicking the image or if the image is inside #drag-area
+      if (
+         imageRef.value &&
+         (!dragArea.contains(event.target))
+      ) {
+        return; // Exit if the click is outside the image and #drag-area
+      }
+
 
   const clientX = "touches" in event ? event.touches[0].clientX : event.clientX;
   const clientY = "touches" in event ? event.touches[0].clientY : event.clientY;
 
-  if (imageRef.value) {
+  if (imageRef.value || dragArea.contains(event.touches)) {
     offsetX.value = clientX - imageRef.value.offsetLeft;
     offsetY.value = clientY - imageRef.value.offsetTop;
   }
@@ -177,8 +200,8 @@ const changePlan = (isArrierePlan) => {
   position: relative;
   margin: auto;
   margin-top: 100px;
-  width: 100%;
-  height: 80vh;
+  width: 50%;
+  height: 500px;
   overflow: visible;
   /* background-image: url("https://plus.unsplash.com/premium_photo-1661766077694-6e3750b0fb97?fm=jpg&q=60&w=3000&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MXx8ZW1wdHklMjB3YWxsfGVufDB8fDB8fHww"); */
   background-image: url("/public/frames/B_tryptich_40x60.svg");
