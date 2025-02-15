@@ -12,22 +12,24 @@
           <div class="d-flex">
             <h4><strong>Taille de l'image:</strong></h4>
             <div class="d-flex flex-column">
+
+              <!-- 1cm == 3px -->
               <h6>Largeur: {{ dimensions.width }} px</h6>
-              <h6>Largeur: {{ dimensions.width / 5 }} cm</h6>
+              <h6>Largeur: {{ (dimensions.width / 3).toFixed(2)}} cm</h6>
             </div>
             <div class="d-flex">
-              <button @click="changeSize(dimensions.width + 100)">+</button>
-              <button @click="changeSize(dimensions.width - 100)">-</button>
+              <button @click="changeSize(dimensions.width + 50)">+</button>
+              <button @click="changeSize(dimensions.width - 50)">-</button>
             </div>
           </div>
-          <div>
+          <!-- <div>
             <h4><strong>Position de l'image:</strong></h4>
         
             <div class="d-flex">
               <button @click="changePlan(true)">Arriere plan</button>
               <button @click="changePlan(false)">Premier plan</button>
             </div>
-          </div>
+          </div> -->
           <div></div>
         </div>
       </div>
@@ -47,7 +49,7 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, computed } from "vue";
 import {
   faArrowDown,
@@ -63,7 +65,7 @@ faArrowUp;
 faArrowDown;
 faPlus;
 
-const imageRef = (ref < HTMLImageElement) | (null > null);
+const imageRef = ref < HTMLImageElement|null > (null);
 const isDragging = ref(false);
 const offsetX = ref(0);
 const offsetY = ref(0);
@@ -71,10 +73,10 @@ const zindex = ref(0);
 const position = ref({ x: 50, y: 50 });
 
 const file = ref(null);
-const previewUrl = ref(undefined);
+const previewUrl = ref<string|undefined>(undefined);
 
 const dimensions = ref({ width: 0, height: 0 });
-const imageStyle = computed(() => ({
+const imageStyle = computed<any>(() => ({
   zIndex:zindex.value,
   left: `${position.value.x}px`,
   top: `${position.value.y}px`,
@@ -83,7 +85,7 @@ const imageStyle = computed(() => ({
   width: dimensions.value.width + "px",
   backgroundImage: "url(" + previewUrl.value + ")",
 }));
-const handleFileChange = (event) => {
+const handleFileChange = (event:any) => {
   const selectedFile = event.target.files[0];
 
   if (selectedFile) {
@@ -98,28 +100,18 @@ const handleFileChange = (event) => {
     };
   }
 };
-    // Function to check if the image is inside the drag area
-    const isInsideDragArea = () => {
-      const dragArea = document.getElementById("drag-area");
-      if (!dragArea || !imageRef.value) return false;
 
-      const imgRect = imageRef.value.getBoundingClientRect();
-      const areaRect = dragArea.getBoundingClientRect();
-
-      return (
-        imgRect.left >= areaRect.left &&
-        imgRect.right <= areaRect.right &&
-        imgRect.top >= areaRect.top &&
-        imgRect.bottom <= areaRect.bottom
-      );
-    };
-const startDrag = (event) => {
+const startDrag = (event :any) => {
   isDragging.value = true;
-  const dragArea = document.getElementById("frame");
+  const dragArea = document.getElementById("frame") as Node;
       // Allow dragging if clicking the image or if the image is inside #drag-area
+      console.log(imageStyle);
+      console.log(dragArea);
+      
+      
       if (
-         imageRef.value &&
-         (!dragArea.contains(event.target))
+         !imageRef.value &&
+         (!dragArea.contains(event.target) )
       ) {
         return; // Exit if the click is outside the image and #drag-area
       }
@@ -129,8 +121,8 @@ const startDrag = (event) => {
   const clientY = "touches" in event ? event.touches[0].clientY : event.clientY;
 
   if (imageRef.value || dragArea.contains(event.touches)) {
-    offsetX.value = clientX - imageRef.value.offsetLeft;
-    offsetY.value = clientY - imageRef.value.offsetTop;
+    offsetX.value = clientX - imageRef.value!.offsetLeft;
+    offsetY.value = clientY - imageRef.value!.offsetTop;
   }
 
   document.addEventListener("mousemove", moveImage);
@@ -139,7 +131,7 @@ const startDrag = (event) => {
   document.addEventListener("touchend", stopDrag);
 };
 
-const moveImage = (event) => {
+const moveImage = (event:any) => {
   if (!isDragging.value) return;
 
   const clientX = "touches" in event ? event.touches[0].clientX : event.clientX;
@@ -159,21 +151,47 @@ const stopDrag = () => {
   document.removeEventListener("touchend", stopDrag);
 };
 
-const changeSize = (newWidth) => {
+const changeSize = (newWidth:number) => {
   dimensions.value.width = newWidth;
 };
-const changePlan = (isArrierePlan) => {
-  console.log(isArrierePlan);
-  
-  if (isArrierePlan) {
-    zindex.value = 0
-  } else{
-    zindex.value = 99
-  }
-};
+
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+@mixin respond($breakpoint) {
+  @if $breakpoint==phone {
+    @media (max-width: 500px) {
+      /* 600px */
+      @content;
+    }
+  }
+  @if $breakpoint==tablet {
+    @media (min-width: 501px) {
+      /* 900px */
+      @content;
+    }
+  }
+  @if $breakpoint==tablet-land {
+    @media (min-width: 800px) {
+      /* 1100px */
+      @content;
+    }
+  }
+  @if $breakpoint==desk {
+    @media (min-width: 1024px) {
+      /* 1800px */
+      @content;
+    }
+  }
+  @if $breakpoint==big-desk {
+    @media (min-width: 1200px) {
+      /* 1800px */
+      @content;
+    }
+  }
+}
+
+
 .container {
   text-align: center;
   font-family: Arial, sans-serif;
@@ -208,6 +226,11 @@ const changePlan = (isArrierePlan) => {
 
   background-size: cover;
   background-repeat: no-repeat;
+
+  @include respond(phone) {
+    width: 100%;
+    height: 300px;
+  }
 }
 .mask {
   position: absolute;
